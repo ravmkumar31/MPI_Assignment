@@ -19,85 +19,61 @@ float f4(float x, int intensity);
 }
 #endif
 
-void mpi_numint(int f,float a,float b,int intensity,int n ,int myrank,int mysize)
+void mpi_numint(int f,float a,float b,int intensity,int n ,int mpiRank,int mpisize)
 {
-  
-  float pre_product = (b-a)/n;
-  //cout<<pre_product;
   float function_eval;
-  int N = n;
-  int P = mysize;
-  float mysummed_value = 0;
-  float fullsum;
-    for(int i=(myrank)*N/P;i<(myrank+1)*N/P;i++)
+  float y = 0;
+  float mul = (b-a)/n;
+  float compute_numeric;
+  for(int x=(mpiRank)*n/mpisize;x<(mpiRank+1)*n/mpisize;x++)
+    {
+      switch(f)
       {
-  switch(f)
-  {
-    case 1:
-      mysummed_value += f1(a + (i+0.5)*pre_product,intensity);
-      break;
-    case 2:
-      mysummed_value += f2(a + (i+0.5)*pre_product,intensity);
-      break;
-    case 3:
-      mysummed_value += f3(a + (i+0.5)*pre_product,intensity);
-      break;
-    case 4:
-      mysummed_value += f4(a + (i+0.5)*pre_product,intensity);
-      break;
-  }
+        case 1:
+          y += f1(a + (x+0.5)*mul,intensity);
+          break;
+        case 2:
+          y += f2(a + (x+0.5)*mul,intensity);
+          break;
+        case 3:
+          y += f3(a + (x+0.5)*mul,intensity);
+          break;
+        case 4:
+          y += f4(a + (x+0.5)*mul,intensity);
+          break;
       }
-      
-      mysummed_value =  pre_product* (mysummed_value);
-      //if(myrank !=0)
-          //MPI_Bcast(&mysummed_value ,1,MPI_INT,0,MPI_COMM_WORLD);
-      
-      //if(myrank == 0)
-      //{
-          MPI_Reduce(&mysummed_value, &fullsum, 1,MPI_FLOAT,MPI_SUM, 0, MPI_COMM_WORLD);
-    if(myrank==0)
-              cout<<fullsum;
-      //}
-          
-
-
+    }
+      y =  mul* (y);
+      MPI_Reduce(&y, &compute_numeric, 1,MPI_FLOAT,MPI_SUM, 0, MPI_COMM_WORLD);
+  if(mpiRank==0)
+    cout<<compute_numeric;
 }
   
 int main (int argc, char* argv[]) {
-  
   if (argc < 6) {
-    std::cerr<<"usage: "<<argv[0]<<" <functionid> <a> <b> <n> <intensity>"<<std::endl;
+    std::cerr<<"usage: "<<argv[0]<<" <function_id> <a> <b> <n> <intensity>"<<std::endl;
     return 0;
   }
 
-  int funcid = atoi(argv[1]);
+  int function_id = atoi(argv[1]);
   float a = atof(argv[2]);
   float b = atof(argv[3]);
   int n = atoi(argv[4]);
   int intensity = atoi(argv[5]);
-  int myrank,mysize;
+  int mpiRank,mpisize;
   MPI_Init(NULL, NULL);
-  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
-  MPI_Comm_size(MPI_COMM_WORLD, &mysize);
-  std::chrono::time_point<std::chrono::system_clock> start; 
-  
-  if(myrank ==0)
-      start = std::chrono::system_clock::now();
-
-  mpi_numint(funcid,a,b,intensity,n,myrank,mysize);
-
-
+  MPI_Comm_rank(MPI_COMM_WORLD, &mpiRank);
+  MPI_Comm_size(MPI_COMM_WORLD, &mpisize);
+  std::chrono::time_point<std::chrono::system_clock> start_time; 
+  if(mpiRank ==0)
+    start_time = std::chrono::system_clock::now();
+  mpi_numint(function_id,a,b,intensity,n,mpiRank,mpisize);
   MPI_Finalize();
-  if(myrank==0)
+  if(mpiRank==0)
   {
-  std::chrono::time_point<std::chrono::system_clock> end = std::chrono::system_clock::now();
-
-  std::chrono::duration<double> elapsed_seconds = end-start;
-
-  std::cerr<<elapsed_seconds.count()<<std::endl;
+    std::chrono::time_point<std::chrono::system_clock> end_time = std::chrono::system_clock::now();
+    std::chrono::duration<double> total_time = end_time-start_time;
+    std::cerr<<total_time.count()<<std::endl;
   }
-  
-
-
   return 0;
 }
