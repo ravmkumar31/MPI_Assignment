@@ -32,7 +32,7 @@ do
       for ITER in ${ITERS} ;
       do
 
-         ANSW=$(mpirun -np ${NP} ./mpi_matmul ${N} ${ITER} 2> .time < /dev/null)
+         ANSW=$(mpirun --mca btl_base_warn_component_unused 0 -np ${NP} ./mpi_matmul ${N} ${ITER} 2> .time < /dev/null)
   
          if [ -z "$(./mpi_matmul ${N} ${ITER} 2> .time)" ] ;
          then
