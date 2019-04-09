@@ -2,7 +2,7 @@
 
 RESULTDIR=result/
 PLOTDIR=plots/
-h=`hostname`
+#h=`hostname` #not necessary
 
 
 # create result directory
@@ -18,7 +18,7 @@ then
 fi
 
 # import params
-source ../params.sh
+. ../params.sh
 NODES="1 2 3 4 5 6" # since nodes are run from 6 -> 1 reverse for cosnsistent plot coloring
 
 
@@ -38,7 +38,7 @@ do
             do
                if [ ! -s ${RESULTDIR}/mpi_num_int_${N}_${INTEN}_${NP}_${P} ] ;
                then
-                  echo ERROR: ${RESULTDIR}/mpi_num_int_${N}_${INTEN}_${NP}_${P} not found or is empty
+                  echo ERROR: ${RESULTDIR}/mpi_num_int_${N}_${INTEN}_${NP}_${P} not found 
                   echo run \'make bench\'  and WAIT for it to complete
                   exit 1
                fi
@@ -52,7 +52,7 @@ done
 
 #exit 1
 	     
-# format output
+# format output files
 for NP in ${NODES};
 do
    for P in ${PS};

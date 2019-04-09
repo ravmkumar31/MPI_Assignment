@@ -22,6 +22,8 @@ then
 fi
 
 
+. ../params.sh
+
 NS="720 2880"
 ITERS="1 3 4"
 NPP="4 9"
@@ -32,13 +34,18 @@ do
       for ITER in ${ITERS} ;
       do
 
-         ANSW=$(mpirun --mca btl_base_warn_component_unused 0 -np ${NP} ./mpi_matmul ${N} ${ITER} 2> .time < /dev/null)
-  
-         if [ -z "$(./mpi_matmul ${N} ${ITER} 2> .time)" ] ;
+         ANSW=$(mpirun ${MPIRUN_PARAMS} -np ${NP} ./mpi_matmul ${N} ${ITER} 2> .time < /dev/null)
+
+	 process_time_file .time
+	 
+	 #The test use to read: I believe this is wrong because it reruns the code sequentially (Erik:2019/04/01)
+#         if [ -z "$(./mpi_matmul ${N} ${ITER} 2> .time)" ] ;
+
+	 if [ -z "${ANSW}" ] ;
          then
             test_time $(cat .time) 
          else
-            echo FAILED: "./mpi_matul ${N} ${ITER}"
+            echo FAILED: "mpirun ${MPIRUN_PARAMS} -np ${NP} ./mpi_matmul ${N} ${ITER}"
             exit 1
          fi
       

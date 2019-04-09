@@ -1,3 +1,7 @@
 #!/bin/sh
 
-mpirun ./hello
+
+source ../params.sh
+
+
+mpirun ${MPI_PARAMS} ./hello

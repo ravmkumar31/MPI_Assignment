@@ -8,7 +8,7 @@ then
 fi
 
 # import params
-source ../params.sh
+. ../params.sh
 
 #NP=${PBS_NP}
 P=${PBS_NUM_PPN}
@@ -25,8 +25,10 @@ do
         continue
       fi
 
-      mpirun ./mpi_matmul ${N} ${ITER} 2> ${RESULTDIR}/mpi_matmul_${N}_${ITER}_${NP}
+      TIMEFILE=${RESULTDIR}/mpi_matmul_${N}_${ITER}_${NP}
+      mpirun ${MPIRUN_PARAMS}  ./mpi_matmul ${N} ${ITER} 2> ${TIMEFILE}
 
+      process_time_file ${TIMEFILE}
    done
 done
 

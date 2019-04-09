@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 RESULTDIR=result/
 PLOTDIR=plots/
@@ -18,7 +18,7 @@ then
 fi
 
 # import params
-source ../params.sh
+. ../params.sh
 
 
 # error checking
@@ -39,7 +39,7 @@ do
       do
          if [ ! -s ${RESULTDIR}/mpi_matmul_${N}_${ITER}_${NP} ] ;
          then
-            echo ERROR: ${RESULTDIR}/mpi_matmul_${N}_${ITER}_${NP} not found or is empty
+            echo ERROR: ${RESULTDIR}/mpi_matmul_${N}_${ITER}_${NP} not found 
             echo run \'make bench\'  and WAIT for it to complete
             exit 1
          fi
@@ -50,39 +50,41 @@ done
 
 	     
 # format output
-for NP in ${MAT__MUL_NP};
-do
-   for P in ${PS};
-   do
-
-      NPP=$(expr ${NP} \* ${P})
-      if [ "${NPP}" -le "32" ] ;
-      then
-         # format 'N seq para'
-         for ITER in ${ITERS};
-         do
-            for N in ${MAT_MUL_NS};
-            do
-		echo ${N} \
-		     $(cat ${RESULTDIR}/mpi_matmul_${N}_${ITER}_1_1)\
-		     $(cat ${RESULTDIR}/mpi_matmul_${N}_${ITER}_${NP}_${P})
-            done  > ${RESULTDIR}/speedupn_${NP}_${P}_${ITER}
-         done
-
-         # format 'ITER seq para'
-         for N in ${MAT_MUL_NS};
-         do
-            for ITER in ${ITERS};
-            do
-		echo ${ITER} \
-		     $(cat ${RESULTDIR}/mpi_matmul_${N}_${ITER}_1_1)\
-		     $(cat ${RESULTDIR}/mpi_matmul_${N}_${ITER}_${NP}_${P})
-            done  > ${RESULTDIR}/speedup_inten_${NP}_${P}_${N}
-         done
-
-      fi
-   done
-done
+if false; then
+    for NP in ${MAT_MUL_NP};
+    do
+	for P in ${PS};
+	do
+	    
+	    NPP=$(expr ${NP} \* ${P})
+	    if [ "${NPP}" -le "32" ] ;
+	    then
+		# format 'N seq para'
+		for ITER in ${ITERS};
+		do
+		    for N in ${MAT_MUL_NS};
+		    do
+			echo ${N} \
+			     $(cat ${RESULTDIR}/mpi_matmul_${N}_${ITER}_1_1)\
+			     $(cat ${RESULTDIR}/mpi_matmul_${N}_${ITER}_${NP}_${P})
+		    done  > ${RESULTDIR}/speedupn_${NP}_${P}_${ITER}
+		done
+		
+		# format 'ITER seq para'
+		for N in ${MAT_MUL_NS};
+		do
+		    for ITER in ${ITERS};
+		    do
+			echo ${ITER} \
+			     $(cat ${RESULTDIR}/mpi_matmul_${N}_${ITER}_1_1)\
+			     $(cat ${RESULTDIR}/mpi_matmul_${N}_${ITER}_${NP}_${P})
+		    done  > ${RESULTDIR}/speedup_inten_${NP}_${P}_${N}
+		done
+		
+	    fi
+	done
+    done
+fi
 
 for NP in ${MAT_MUL_NP};
 do
@@ -116,9 +118,38 @@ do
    done
 done
 
+for NP in ${MAT_MUL_NP};
+do
+
+   for ITER in ${ITERS};
+   do
+       #format N flops
+       for N in ${MAT_MUL_NS};
+      do
+         if [ "${N}" -lt "100000" ] || [ "${NP}" != "1" ] ; 
+         then
+	     TIME=$(cat ${RESULTDIR}/mpi_matmul_${N}_${ITER}_${NP})
+	     FLOP=$(echo ${N} \* ${N} \* ${ITER} \* 2 | bc -l)
+	     FLOPS=$(echo ${FLOP} / ${TIME}  | bc -l)
+
+	     echo ${N} ${FLOPS}		 
+         fi
+      done  > ${RESULTDIR}/flops_n_${NP}_${ITER}
+   done
+done
 
 # plot
 
+
+for ITER in ${ITERS};
+do
+    GSFLOP="${GSFLOP} ; set title 'ITER=${ITER}' ; plot "
+    for NP in ${MAT_MUL_NP};
+    do
+	GSFLOP="${GSFLOP} '${RESULTDIR}/flops_n_${NP}_${ITER}' u 1:(\$2 / 1000/1000/1000) t 'P=${NP}x${NP}', "
+	
+   done
+done
 for ITER in ${ITERS};
 do
    GSPNP="${GSPNP} ; set title 'ITER=${ITER}' ; plot "
@@ -241,5 +272,18 @@ set yrange [0:36];
 set ytics 2;
 
 ${GSPIT}
+
+EOF
+
+gnuplot <<EOF
+
+set terminal pdf
+set output '${PLOTDIR}matmul_FLOP_plots.pdf'
+set style data linespoints
+set key top left;
+set xlabel 'N'; 
+set ylabel 'GFlops';
+
+${GSFLOP}
 
 EOF
