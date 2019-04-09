@@ -40,7 +40,7 @@ do
 	 
 	 #The test use to read: I believe this is wrong because it reruns the code sequentially (Erik:2019/04/01)
 #         if [ -z "$(./mpi_matmul ${N} ${ITER} 2> .time)" ] ;
-
+  
 	 if [ -z "${ANSW}" ] ;
          then
             test_time $(cat .time) 
