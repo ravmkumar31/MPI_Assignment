@@ -55,46 +55,33 @@ int main (int argc, char* argv[]) {
   }
 
 
-  //initialize data
-  
-   MPI_Init(&argc,&argv);
-
-   long n = atol(argv[1]);
-
-   int iteration = atoi(argv[2]);
-   bool check = true;
-
-   int Mpi_rank,valnp;
-   
-   MPI_Comm_rank(MPI_COMM_WORLD,&Mpi_rank);
-   MPI_Comm_size(MPI_COMM_WORLD,&valnp);
-
-   int p = sqrt(valnp);
-   long div_val = n/p; 
-   
-   int Rdiv = Mpi_rank/p,Cdiv = Mpi_rank%p;
-   
-   MPI_Comm Rcomm;
-   int Rrank;
-   MPI_Comm_split(MPI_COMM_WORLD, Rdiv, Mpi_rank, &Rcomm);
-   MPI_Comm_rank(Rcomm,&Rrank);
-
-   MPI_Comm Ccomm;
-   int Crank;
-   MPI_Comm_split(MPI_COMM_WORLD, Cdiv, Mpi_rank, &Ccomm);
-   MPI_Comm_rank(Ccomm,&Crank);
-
-   float* arr = new float[div_val*div_val];
-   long Rstart = (Rdiv*div_val),colstart = (Cdiv*div_val);
-   long Rend = Rstart+div_val,colend = colstart+div_val;
-
-  for (long row = Rstart,Rset=0; row<Rend; row++,Rset++) {
-    for (long col= colstart,Cset=0; col<colend; col++,Cset++) {
-      arr[(Rset*div_val)+Cset] = genA(row, col);
+    MPI_Init(&argc,&argv);
+    long n = atol(argv[1]);
+    int iteration = atoi(argv[2]);
+    bool check = true;
+    int Mpi_rank,valnp;
+    MPI_Comm_rank(MPI_COMM_WORLD,&Mpi_rank);
+    MPI_Comm_size(MPI_COMM_WORLD,&valnp);
+    int p = sqrt(valnp);
+    long div_val = n/p; 
+    int Rdiv = Mpi_rank/p,Cdiv = Mpi_rank%p;
+    MPI_Comm Rcomm;
+    int Rrank;
+    MPI_Comm_split(MPI_COMM_WORLD, Rdiv, Mpi_rank, &Rcomm);
+    MPI_Comm_rank(Rcomm,&Rrank);
+    MPI_Comm Ccomm;
+    int Crank;
+    MPI_Comm_split(MPI_COMM_WORLD, Cdiv, Mpi_rank, &Ccomm);
+    MPI_Comm_rank(Ccomm,&Crank);
+    float* arr = new float[div_val*div_val];
+    long Rstart = (Rdiv*div_val),colstart = (Cdiv*div_val);
+    long Rend = Rstart+div_val,colend = colstart+div_val;
+    for (long row = Rstart,Rset=0; row<Rend; row++,Rset++) {
+      for (long col= colstart,Cset=0; col<colend; col++,Cset++) {
+        arr[(Rset*div_val)+Cset] = genA(row, col);
+      }
     }
-  }
-  float* x = new float[div_val];
-
+    float* x = new float[div_val];
   for (long i=0; i<div_val; i++)
     {
      x[i] = genx0(i);
@@ -109,21 +96,18 @@ int main (int argc, char* argv[]) {
       matmul(arr,x,y,div_val);
       MPI_Reduce(y,x,div_val,MPI_FLOAT,MPI_SUM,Rdiv,Rcomm);
       MPI_Bcast(x,div_val,MPI_FLOAT,Cdiv, Ccomm);
-  if (check){
-    for (long i = colstart,p=0; i<colend; ++i,++p){
+    if (check){
+      for (long i = colstart,p=0; i<colend; ++i,++p){
         checkx (ti+1, i, x[p]);
              }
           }
   }
-  
   if(Mpi_rank == 0){
         double end = MPI_Wtime(); 
         cerr<<end-start<<endl;
    }
- 
   MPI_Comm_free(&Rcomm);
   MPI_Comm_free(&Ccomm);
-
   delete[] arr;
   delete[] x;
   delete[] y;
